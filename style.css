@@ -1,0 +1,128 @@
+/* ================= FULL HEIGHT RESET ================= */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* 🚀 removes scrollbars */
+  box-sizing: border-box;
+}
+
+/* ================= GLOBAL ================= */
+body {
+  background: #0a0a14; /* unchanged */
+  color: white;
+  font-family: Consolas, monospace;
+  text-align: center;
+}
+
+/* ================= MENU BACKGROUND ================= */
+body.menu-active {
+  background-image: url("assets/upside-bg.png");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* ⭐ cinematic dark overlay */
+body.menu-active::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ================= FULLSCREEN MENU LAYOUT ================= */
+#menu {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+}
+
+
+/* ================= FULLSCREEN CANVAS ================= */
+canvas {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #111;
+  border: none;          /* remove box look */
+  margin: 0;
+  z-index: 5;
+}
+/* ================= GAME OVER ================= */
+#gameOver {
+  margin-top: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ================= CHARACTER ================= */
+.character {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 10px;
+  border: 2px solid white;
+  cursor: pointer;
+  background: transparent;
+  transition: 0.2s ease;
+}
+
+.character:hover {
+  transform: scale(1.05);
+}
+
+.character.selected {
+  border-color: lime;
+  color: lime;
+}
+
+/* ================= BUTTON ================= */
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-top: 20px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ================= PERFECT MENU CENTERING ================= */
+
+/* center headings cleanly */
+#menu h1,
+#menu h2 {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* center character row */
+#characters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
+  margin: 10px auto 0 auto;
+}
+
+/* ensure menu content stays centered after restart */
+#menu > * {
+  position: relative;
+  z-index: 2;
+}
