@@ -3,13 +3,13 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* 🚀 removes scrollbars */
+  overflow: hidden;
   box-sizing: border-box;
 }
 
 /* ================= GLOBAL ================= */
 body {
-  background: #0a0a14; /* unchanged */
+  background: #0a0a14;
   color: white;
   font-family: Consolas, monospace;
   text-align: center;
@@ -46,7 +46,6 @@ body.menu-active::before {
   padding: 20px;
 }
 
-
 /* ================= FULLSCREEN CANVAS ================= */
 canvas {
   display: none;
@@ -55,19 +54,9 @@ canvas {
   width: 100vw;
   height: 100vh;
   background: #111;
-  border: none;          /* remove box look */
+  border: none;
   margin: 0;
   z-index: 5;
-}
-/* ================= GAME OVER ================= */
-#gameOver {
-  margin-top: 40px;
-  position: relative;
-  z-index: 2;
-}
-
-.hidden {
-  display: none;
 }
 
 /* ================= CHARACTER ================= */
@@ -100,8 +89,6 @@ button {
 }
 
 /* ================= PERFECT MENU CENTERING ================= */
-
-/* center headings cleanly */
 #menu h1,
 #menu h2 {
   text-align: center;
@@ -109,7 +96,6 @@ button {
   margin-right: auto;
 }
 
-/* center character row */
 #characters {
   display: flex;
   flex-wrap: wrap;
@@ -121,8 +107,95 @@ button {
   margin: 10px auto 0 auto;
 }
 
-/* ensure menu content stays centered after restart */
 #menu > * {
   position: relative;
   z-index: 2;
+}
+
+/* ========================================================= */
+/* 🔥🔥🔥 CINEMATIC GAME OVER SCREEN 🔥🔥🔥 */
+/* ========================================================= */
+
+#gameOver {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  /* 🎬 YOUR BACKGROUND IMAGE */
+  background-image: url("assets/gameover-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  z-index: 999;
+}
+
+/* dark cinematic vignette */
+#gameOver::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center,
+      rgba(0,0,0,0.45) 0%,
+      rgba(0,0,0,0.75) 55%,
+      rgba(0,0,0,0.92) 100%);
+  z-index: 0;
+}
+
+/* bring content above overlay */
+#gameOver > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 🔥 title glow */
+#gameOver h1 {
+  font-size: 48px;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+  color: #ff4d4d;
+  text-shadow:
+    0 0 10px rgba(255,0,0,0.7),
+    0 0 25px rgba(255,0,0,0.5),
+    0 0 45px rgba(255,0,0,0.25);
+}
+
+/* score text */
+#gameOver p {
+  font-size: 20px;
+  margin: 6px 0;
+  opacity: 0.95;
+}
+
+/* 🔥 cinematic button */
+#gameOver button {
+  margin-top: 30px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-family: Consolas, monospace;
+  cursor: pointer;
+
+  background: rgba(20,20,30,0.9);
+  color: white;
+  border: 2px solid #ff3c3c;
+  border-radius: 6px;
+
+  transition: all 0.25s ease;
+}
+
+#gameOver button:hover {
+  transform: scale(1.08);
+  background: #ff3c3c;
+  box-shadow: 0 0 18px rgba(255,60,60,0.8);
+}
+
+/* ================= UTIL ================= */
+.hidden {
+  display: none !important;
 }
