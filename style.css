@@ -112,9 +112,7 @@ button {
   z-index: 2;
 }
 
-/* ========================================================= */
-/* 🔥🔥🔥 CINEMATIC GAME OVER SCREEN 🔥🔥🔥 */
-/* ========================================================= */
+/* ================= GAME OVER CINEMATIC ================= */
 
 #gameOver {
   position: fixed;
@@ -124,27 +122,29 @@ button {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
   text-align: center;
 
-  /* 🎬 YOUR BACKGROUND IMAGE */
   background-image: url("assets/gameover-bg.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
   z-index: 999;
+  padding: 20px;
 }
 
-/* dark cinematic vignette */
+/* dark cinematic overlay */
 #gameOver::before {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at center,
-      rgba(0,0,0,0.45) 0%,
-      rgba(0,0,0,0.75) 55%,
-      rgba(0,0,0,0.92) 100%);
+  background: radial-gradient(
+    circle at center,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.85) 70%,
+    rgba(0,0,0,0.95) 100%
+  );
   z-index: 0;
 }
 
@@ -154,28 +154,38 @@ button {
   z-index: 1;
 }
 
-/* 🔥 title glow */
-#gameOver h1 {
-  font-size: 48px;
-  letter-spacing: 3px;
-  margin-bottom: 20px;
+/* =========================================================
+   🎯 SCORE POSITIONING (UNDER IMAGE TEXT)
+   ========================================================= */
+
+/* base score styling */
+#gameOver p {
+  font-size: 40px;
+  letter-spacing: 4px;
   color: #ff4d4d;
   text-shadow:
-    0 0 10px rgba(255,0,0,0.7),
-    0 0 25px rgba(255,0,0,0.5),
-    0 0 45px rgba(255,0,0,0.25);
+    0 0 12px rgba(255,0,0,0.9),
+    0 0 30px rgba(255,0,0,0.6);
+
+  align-self: flex-start;
+  text-align: left;
+  margin-left: 25vw;
+  margin-top: 0;
 }
 
-/* score text */
-#gameOver p {
-  font-size: 20px;
-  margin: 6px 0;
-  opacity: 0.95;
+/* ⭐ MASTER VERTICAL CONTROL — ADJUST THIS ONLY */
+#gameOver p:first-of-type {
+  margin-top: 32vh; /* 🔥 tweak between 28–36vh if needed */
 }
 
-/* 🔥 cinematic button */
+/* spacing between score lines */
+#gameOver p + p {
+  margin-top: 12px;
+}
+
+/* ================= BUTTON ================= */
 #gameOver button {
-  margin-top: 30px;
+  margin-top: 28px;
   padding: 14px 28px;
   font-size: 16px;
   font-family: Consolas, monospace;
@@ -187,6 +197,9 @@ button {
   border-radius: 6px;
 
   transition: all 0.25s ease;
+
+  align-self: flex-start;
+  margin-left: 33vw;
 }
 
 #gameOver button:hover {

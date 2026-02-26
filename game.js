@@ -21,11 +21,18 @@ roarSound.volume = 0.65;
 
 // ================= HITBOX TUNING =================
 const DEMO_HITBOX = {
-  left: 20,
-  right: 20,
-  top: 15,
+  left: 50,
+  right: 50,
+  top: 45,
   bottom: 12
 };
+
+// ================= DIFFICULTY CONTROL =================
+let difficultyLevel = 0;
+
+const SPAWN_BASE_MIN = 700;
+const SPAWN_BASE_MAX = 1400;
+const SPAWN_MIN_LIMIT = 380;
 
 // ================= RESPONSIVE CANVAS =================
 let GROUND_Y = 320;
@@ -86,8 +93,6 @@ characters.forEach(char => {
 let player, obstacles, speed, worldSpeed, score, gameRunning;
 let lastSpawn = 0;
 let nextSpawnDelay = 0;
-let gameStartTime = 0;
-let lastSpeedIncreaseMinute = 0;
 let distanceTravelled = 0;
 
 // ================= HIGH SCORE =================
@@ -135,8 +140,8 @@ function resetGame() {
     x: 50,
     y: GROUND_Y,
     vy: 0,
-    width: 60,
-    height: 60,
+    width: 100,
+    height: 100,
     jumping: false,
     sprite: characterImages[selectedCharacter.name]
   };
@@ -148,6 +153,8 @@ function resetGame() {
   score = 0;
   distanceTravelled = 0;
   gameRunning = true;
+
+  difficultyLevel = 0;
 
   screenShake = 0;
   hitFlash = 0;
@@ -173,9 +180,6 @@ document.getElementById("startBtn").onclick = () => {
   resizeCanvas();
   resetGame();
 
-  gameStartTime = performance.now();
-  lastSpeedIncreaseMinute = 0;
-
   requestAnimationFrame(gameLoop);
 };
 
@@ -187,13 +191,30 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// ================= SPAWN =================
+// ================= SMART SPAWN =================
 function spawnObstacle() {
   obstacles.push({
-    x: canvas.width + 100,
+    x: canvas.width + 120,
     width: 70,
     height: 90
   });
+
+  // 🎯 difficulty scaling
+  difficultyLevel = Math.floor(distanceTravelled / 2500);
+
+  let minDelay = SPAWN_BASE_MIN - difficultyLevel * 60;
+  let maxDelay = SPAWN_BASE_MAX - difficultyLevel * 90;
+
+  minDelay = Math.max(SPAWN_MIN_LIMIT, minDelay);
+  maxDelay = Math.max(minDelay + 120, maxDelay);
+
+  nextSpawnDelay =
+    minDelay + Math.random() * (maxDelay - minDelay);
+
+  // anti-clump protection
+  if (obstacles.length > 2) {
+    nextSpawnDelay += 120;
+  }
 }
 
 // ================= GAME LOOP =================
@@ -202,11 +223,10 @@ function gameLoop(timestamp) {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // 🎬 slow motion
   let speedMultiplier = slowMotionTimer > 0 ? 0.35 : 1;
   if (slowMotionTimer > 0) slowMotionTimer--;
 
-  // 📳 screen shake
+  // screen shake
   let shakeX = 0;
   let shakeY = 0;
   if (screenShake > 0) {
@@ -220,7 +240,7 @@ function gameLoop(timestamp) {
   ctx.scale(deathZoom, deathZoom);
   ctx.translate(-canvas.width / 2 + shakeX, -canvas.height / 2 + shakeY);
 
-  // ===== background =====
+  // background scroll
   const bgScroll = distanceTravelled * 0.4;
   const bgWidth = canvas.width;
 
@@ -252,7 +272,7 @@ function gameLoop(timestamp) {
 
   distanceTravelled += worldSpeed * speedMultiplier;
 
-  // player
+  // draw player
   ctx.drawImage(
     player.sprite,
     player.x,
@@ -261,7 +281,7 @@ function gameLoop(timestamp) {
     player.height
   );
 
-  // obstacles
+  // demogorgons
   for (let obs of obstacles) {
     obs.x -= worldSpeed * speedMultiplier;
 
@@ -295,24 +315,20 @@ function gameLoop(timestamp) {
     }
   }
 
-  obstacles = obstacles.filter(o => o.x > -100);
+  obstacles = obstacles.filter(o => o.x > -120);
 
-  // particles
   updateParticles();
   drawParticles();
 
-  // 💥 red flash
   if (hitFlash > 0) {
     ctx.fillStyle = `rgba(255,0,0,${hitFlash})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     hitFlash *= 0.9;
   }
 
-  // HUD
   ctx.fillStyle = "white";
   ctx.font = "20px Consolas";
   ctx.fillText("Score: " + Math.floor(score), 20, 30);
-  ctx.fillText("Level: 1", 20, 55);
 
   ctx.restore();
   requestAnimationFrame(gameLoop);
