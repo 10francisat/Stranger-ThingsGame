@@ -8,64 +8,70 @@ const ctx = canvas.getContext("2d");
 const menu = document.getElementById("menu");
 const gameOverDiv = document.getElementById("gameOver");
 
-// ================= JUICE SYSTEM =================
+// ================= AUDIO SYSTEM =================
+const bgMusic = new Audio("assets/background-music.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.4;
+
+const roarSound = new Audio("assets/demogorgon-roar.mp3");
+roarSound.volume = 0.65;
+
+function playBackgroundMusic() {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(e => console.log("Music waiting for interaction..."));
+  }
+}
+
+// ================= JUICE & STATE =================
 let screenShake = 0;
 let hitFlash = 0;
 let slowMotionTimer = 0;
 let deathZoom = 1;
 let particles = [];
-
-// 🔊 demogorgon roar
-const roarSound = new Audio("assets/demogorgon-roar.mp3");
-roarSound.volume = 0.65;
+let isDucking = false; 
 
 // ================= HITBOX TUNING =================
-const DEMO_HITBOX = {
-  left: 50,
-  right: 50,
-  top: 45,
-  bottom: 12
-};
+const DEMO_HITBOX = { left: 50, right: 50, top: 45, bottom: 12 };
 
 // ================= DIFFICULTY CONTROL =================
 let difficultyLevel = 0;
-
 const SPAWN_BASE_MIN = 700;
 const SPAWN_BASE_MAX = 1400;
 const SPAWN_MIN_LIMIT = 380;
 
 // ================= RESPONSIVE CANVAS =================
 let GROUND_Y = 320;
-
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   GROUND_Y = Math.floor(canvas.height * 0.7);
 }
-
 window.addEventListener("resize", resizeCanvas);
 setTimeout(resizeCanvas, 50);
 
-// ================= CHARACTERS =================
+// ================= ASSETS (4-Frame Sequence) =================
 const characters = [
-  { name: "MIKE", img: "assets/mike.png" },
-  { name: "DUSTIN", img: "assets/dustin.png" },
-  { name: "LUCAS", img: "assets/lucas.png" },
-  { name: "MAX", img: "assets/max.png" },
-  { name: "EL", img: "assets/el.png" },
-  { name: "WILL", img: "assets/will.png" }
+  { name: "MIKE", img1: "assets/mike1.png", img2: "assets/mike.png", img3: "assets/mike2.png" },
+  { name: "DUSTIN", img1: "assets/dustin1.png", img2: "assets/dustin.png", img3: "assets/dustin2.png" },
+  { name: "LUCAS", img1: "assets/lucas1.png", img2: "assets/lucas.png", img3: "assets/lucas2.png" },
+  { name: "MAX", img1: "assets/max1.png", img2: "assets/max.png", img3: "assets/max2.png" },
+  { name: "EL", img1: "assets/el1.png", img2: "assets/el.png", img3: "assets/el2.png" },
+  { name: "WILL", img1: "assets/will1.png", img2: "assets/will.png", img3: "assets/will2.png" }
 ];
 
-// ================= IMAGE LOADING =================
 const characterImages = {};
 characters.forEach(c => {
-  const img = new Image();
-  img.src = c.img;
-  characterImages[c.name] = img;
+  const img1 = new Image(); img1.src = c.img1;
+  const imgN = new Image(); imgN.src = c.img2;
+  const img2 = new Image(); img2.src = c.img3;
+  characterImages[c.name] = [img1, imgN, img2, imgN]; 
 });
 
 const demogorgonImg = new Image();
 demogorgonImg.src = "assets/demogorgon.png";
+
+const demobatImg = new Image(); 
+demobatImg.src = "assets/demobat.png"; 
 
 const bgImg = new Image();
 bgImg.src = "assets/game-bg.png";
@@ -78,38 +84,27 @@ characters.forEach(char => {
   const div = document.createElement("div");
   div.className = "character";
   div.innerText = char.name;
-
   div.onclick = () => {
-    document.querySelectorAll(".character")
-      .forEach(c => c.classList.remove("selected"));
+    playBackgroundMusic();
+    document.querySelectorAll(".character").forEach(c => c.classList.remove("selected"));
     div.classList.add("selected");
     selectedCharacter = char;
   };
-
   charContainer.appendChild(div);
 });
 
 // ================= GAME VARIABLES =================
-let player, obstacles, speed, worldSpeed, score, gameRunning;
-let lastSpawn = 0;
-let nextSpawnDelay = 0;
-let distanceTravelled = 0;
+let player, obstacles, worldSpeed, score, gameRunning;
+let lastSpawn = 0, nextSpawnDelay = 0, distanceTravelled = 0;
 
-// ================= HIGH SCORE =================
-function getHighScore() {
-  return Number(localStorage.getItem("upsidedown_highscore") || 0);
-}
-
-function setHighScore(s) {
-  localStorage.setItem("upsidedown_highscore", s);
-}
+function getHighScore() { return Number(localStorage.getItem("upsidedown_highscore") || 0); }
+function setHighScore(s) { localStorage.setItem("upsidedown_highscore", s); }
 
 // ================= PARTICLES =================
 function spawnParticles(x, y) {
   for (let i = 0; i < 25; i++) {
     particles.push({
-      x,
-      y,
+      x, y,
       vx: (Math.random() - 0.5) * 8,
       vy: (Math.random() - 0.5) * 8,
       life: 40 + Math.random() * 20
@@ -119,116 +114,111 @@ function spawnParticles(x, y) {
 
 function updateParticles() {
   particles.forEach(p => {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.2;
-    p.life--;
+    p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
   });
   particles = particles.filter(p => p.life > 0);
 }
 
 function drawParticles() {
   ctx.fillStyle = "rgba(255,50,50,0.9)";
-  particles.forEach(p => {
-    ctx.fillRect(p.x, p.y, 3, 3);
-  });
+  particles.forEach(p => ctx.fillRect(p.x, p.y, 3, 3));
 }
 
 // ================= RESET GAME =================
 function resetGame() {
   player = {
-    x: 50,
-    y: GROUND_Y,
-    vy: 0,
-    width: 100,
-    height: 100,
+    x: 50, y: GROUND_Y, vy: 0,
+    width: 100, height: 100,
     jumping: false,
-    sprite: characterImages[selectedCharacter.name]
+    sprites: characterImages[selectedCharacter.name], 
+    frameIndex: 0, 
+    animTimer: 0
   };
-
   obstacles = [];
-
-  speed = 5;
   worldSpeed = 5;
   score = 0;
   distanceTravelled = 0;
   gameRunning = true;
-
   difficultyLevel = 0;
-
   screenShake = 0;
   hitFlash = 0;
   slowMotionTimer = 0;
   deathZoom = 1;
   particles = [];
-
   lastSpawn = 0;
   nextSpawnDelay = 900 + Math.random() * 1400;
 }
 
 // ================= START BUTTON =================
 document.getElementById("startBtn").onclick = () => {
-  if (!selectedCharacter) {
-    alert("Choose a character first!");
-    return;
-  }
-
+  if (!selectedCharacter) { alert("Choose a character first!"); return; }
+  playBackgroundMusic();
   menu.style.display = "none";
   canvas.style.display = "block";
   document.body.classList.remove("menu-active");
-
   resizeCanvas();
   resetGame();
-
   requestAnimationFrame(gameLoop);
 };
 
-// ================= INPUT =================
+// ================= INPUT (JUMP & DUCK) =================
 document.addEventListener("keydown", e => {
-  if (e.code === "Space" && player && !player.jumping) {
+  if ((e.code === "Space" || e.code === "ArrowUp") && player && !player.jumping && !isDucking) {
     player.vy = -18;
     player.jumping = true;
+  }
+  if (e.code === "ArrowDown" || e.code === "KeyS") {
+    isDucking = true;
+  }
+});
+
+document.addEventListener("keyup", e => {
+  if (e.code === "ArrowDown" || e.code === "KeyS") {
+    isDucking = false;
   }
 });
 
 // ================= SMART SPAWN =================
 function spawnObstacle() {
+  const isAirEnemy = Math.random() > 0.7; 
+  
+  let obsWidth, obsHeight, obsY;
+
+  if (isAirEnemy) {
+    obsWidth = 55;
+    obsHeight = 45;
+    obsY = GROUND_Y - 55; 
+  } else {
+    obsWidth = 50;
+    obsHeight = 90; 
+    obsY = GROUND_Y; 
+  }
+
   obstacles.push({
     x: canvas.width + 120,
-    width: 70,
-    height: 90
+    y: obsY, 
+    width: obsWidth,
+    height: obsHeight,
+    type: isAirEnemy ? "demobat" : "demogorgon"
   });
 
-  // 🎯 difficulty scaling
   difficultyLevel = Math.floor(distanceTravelled / 2500);
-
-  let minDelay = SPAWN_BASE_MIN - difficultyLevel * 60;
-  let maxDelay = SPAWN_BASE_MAX - difficultyLevel * 90;
-
-  minDelay = Math.max(SPAWN_MIN_LIMIT, minDelay);
-  maxDelay = Math.max(minDelay + 120, maxDelay);
-
-  nextSpawnDelay =
-    minDelay + Math.random() * (maxDelay - minDelay);
-
-  // anti-clump protection
-  if (obstacles.length > 2) {
-    nextSpawnDelay += 120;
-  }
+  let minDelay = Math.max(SPAWN_MIN_LIMIT, SPAWN_BASE_MIN - difficultyLevel * 60);
+  let maxDelay = Math.max(minDelay + 120, SPAWN_BASE_MAX - difficultyLevel * 90);
+  nextSpawnDelay = minDelay + Math.random() * (maxDelay - minDelay);
 }
 
 // ================= GAME LOOP =================
 function gameLoop(timestamp) {
-  if (!gameRunning) return;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!gameRunning) {
+    drawDeathSequence();
+    return;
+  }
 
   let speedMultiplier = slowMotionTimer > 0 ? 0.35 : 1;
   if (slowMotionTimer > 0) slowMotionTimer--;
 
-  // screen shake
-  let shakeX = 0;
-  let shakeY = 0;
+  let shakeX = 0, shakeY = 0;
   if (screenShake > 0) {
     shakeX = (Math.random() - 0.5) * screenShake;
     shakeY = (Math.random() - 0.5) * screenShake;
@@ -236,87 +226,94 @@ function gameLoop(timestamp) {
   }
 
   ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.scale(deathZoom, deathZoom);
-  ctx.translate(-canvas.width / 2 + shakeX, -canvas.height / 2 + shakeY);
-
-  // background scroll
-  const bgScroll = distanceTravelled * 0.4;
-  const bgWidth = canvas.width;
-
-  ctx.drawImage(bgImg, -bgScroll % bgWidth, 0, bgWidth, canvas.height);
-  ctx.drawImage(bgImg, (-bgScroll % bgWidth) + bgWidth, 0, bgWidth, canvas.height);
-
-  score += 0.1 * speedMultiplier;
-
-  // player forward drift
-  if (player.x < canvas.width * 0.25) {
-    player.x += worldSpeed * 0.4 * speedMultiplier;
+  if (deathZoom > 1) {
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(deathZoom, deathZoom);
+    ctx.translate(-canvas.width / 2 + shakeX, -canvas.height / 2 + shakeY);
+  } else {
+    ctx.translate(shakeX, shakeY);
   }
 
-  // spawn
+  ctx.clearRect(0, 0, canvas.width, canvas.height); 
+  const bgScroll = distanceTravelled * 0.4;
+  const bgWidth = canvas.width;
+  ctx.drawImage(bgImg, -(bgScroll % bgWidth), 0, bgWidth, canvas.height);
+  ctx.drawImage(bgImg, -(bgScroll % bgWidth) + bgWidth, 0, bgWidth, canvas.height);
+
+  score += 0.1 * speedMultiplier;
+  distanceTravelled += worldSpeed * speedMultiplier;
+
   if (timestamp - lastSpawn > nextSpawnDelay) {
     spawnObstacle();
     lastSpawn = timestamp;
   }
 
-  // physics
   player.vy += 0.9 * speedMultiplier;
   player.y += player.vy;
-
   if (player.y >= GROUND_Y) {
     player.y = GROUND_Y;
     player.vy = 0;
     player.jumping = false;
   }
 
-  distanceTravelled += worldSpeed * speedMultiplier;
+  player.animTimer += speedMultiplier;
+  if (player.animTimer > 7) {
+    player.frameIndex = (player.frameIndex + 1) % 4; 
+    player.animTimer = 0;
+  }
 
-  // draw player
-  ctx.drawImage(
-    player.sprite,
-    player.x,
-    player.y - player.height,
-    player.width,
-    player.height
-  );
+  let currentSprite = player.sprites[player.frameIndex];
+  if (player.jumping || isDucking) {
+    currentSprite = player.sprites[1]; 
+  }
 
-  // demogorgons
+  let drawH = player.height;
+  let drawY = player.y - player.height;
+  
+  if (isDucking && !player.jumping) {
+    drawH = player.height * 0.55; 
+    drawY = player.y - drawH;
+  }
+
+  ctx.drawImage(currentSprite, player.x, drawY, player.width, drawH);
+
   for (let obs of obstacles) {
-    obs.x -= worldSpeed * speedMultiplier;
+    obs.x -= (worldSpeed + (difficultyLevel * 0.5)) * speedMultiplier;
 
-    ctx.drawImage(
-      demogorgonImg,
-      obs.x,
-      GROUND_Y - obs.height,
-      obs.width,
-      obs.height
-    );
+    if (obs.type === "demobat") {
+        ctx.drawImage(demobatImg, obs.x, obs.y - obs.height, obs.width, obs.height);
+    } else {
+        ctx.drawImage(demogorgonImg, obs.x, obs.y - obs.height, obs.width, obs.height);
+    }
 
-    // collision
-    const hitLeft = obs.x + DEMO_HITBOX.left;
-    const hitRight = obs.x + obs.width - DEMO_HITBOX.right;
-    const hitTop = GROUND_Y - obs.height + DEMO_HITBOX.top;
-    const hitBottom = GROUND_Y - DEMO_HITBOX.bottom;
+    // --- MODIFIED COLLISION FOR NO-JUMP BATS ---
+    let obstacleTop = obs.y - obs.height + 15;
+    if (obs.type === "demobat") {
+        obstacleTop = -1000; // Impossible to jump over
+    }
 
-    const playerLeft = player.x;
-    const playerRight = player.x + player.width;
-    const playerTop = player.y - player.height;
-    const playerBottom = player.y;
+    const pBox = {
+      left: player.x + 20,
+      right: player.x + player.width - 20,
+      top: drawY + 10,
+      bottom: player.y
+    };
 
-    if (
-      playerRight > hitLeft &&
-      playerLeft < hitRight &&
-      playerBottom > hitTop &&
-      playerTop < hitBottom
-    ) {
+    const oBox = {
+      left: obs.x + 15,
+      right: obs.x + obs.width - 15,
+      top: obstacleTop,
+      bottom: obs.y - 10            
+    };
+    // ------------------------------------------
+
+    if (pBox.right > oBox.left && pBox.left < oBox.right && pBox.bottom > oBox.top && pBox.top < oBox.bottom) {
       triggerDeathFX();
       return;
     }
   }
 
   obstacles = obstacles.filter(o => o.x > -120);
-
   updateParticles();
   drawParticles();
 
@@ -334,47 +331,49 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
-// ================= CINEMATIC DEATH =================
 function triggerDeathFX() {
   gameRunning = false;
-
   screenShake = 25;
   hitFlash = 0.6;
   slowMotionTimer = 25;
   deathZoom = 1.15;
-
+  deathFrames = 40; 
   spawnParticles(player.x + 30, player.y - 30);
-
-  try {
-    roarSound.currentTime = 0;
-    roarSound.play();
-  } catch (e) {}
-
-  setTimeout(endGame, 900);
+  try { roarSound.currentTime = 0; roarSound.play(); } catch (e) {}
+  requestAnimationFrame(drawDeathSequence);
 }
 
-// ================= GAME OVER =================
+function drawDeathSequence() {
+  if (deathFrames <= 0) { endGame(); return; }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const bgScroll = distanceTravelled * 0.4;
+  const bgWidth = canvas.width;
+  ctx.drawImage(bgImg, -(bgScroll % bgWidth), 0, bgWidth, canvas.height);
+  ctx.drawImage(bgImg, -(bgScroll % bgWidth) + bgWidth, 0, bgWidth, canvas.height);
+  if (hitFlash > 0) {
+    ctx.fillStyle = `rgba(255,0,0,${hitFlash})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    hitFlash *= 0.9;
+  }
+  updateParticles();
+  drawParticles();
+  deathFrames--;
+  requestAnimationFrame(drawDeathSequence);
+}
+
 function endGame() {
   let hs = getHighScore();
-  if (score > hs) {
-    setHighScore(Math.floor(score));
-    hs = Math.floor(score);
-  }
-
-  document.getElementById("scoreText").innerText =
-    "Your Score: " + Math.floor(score);
-
-  document.getElementById("highScoreText").innerText =
-    "High Score: " + hs;
-
+  if (score > hs) { setHighScore(Math.floor(score)); hs = Math.floor(score); }
+  document.getElementById("scoreText").innerText = "Your Score: " + Math.floor(score);
+  document.getElementById("highScoreText").innerText = "High Score: " + hs;
   canvas.style.display = "none";
   gameOverDiv.classList.remove("hidden");
 }
 
-// ================= RESTART =================
 function restartGame() {
   gameOverDiv.classList.add("hidden");
   canvas.style.display = "none";
   menu.style.display = "flex";
   document.body.classList.add("menu-active");
+  playBackgroundMusic();
 }
