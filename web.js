@@ -35,9 +35,9 @@ const DEMO_HITBOX = { left: 50, right: 50, top: 45, bottom: 12 };
 
 // ================= DIFFICULTY CONTROL =================
 let difficultyLevel = 0;
-const SPAWN_BASE_MIN = 950;   // ⬆ increased from 700 (bigger gap)
-const SPAWN_BASE_MAX = 1700;   // ⬆ increased from 1400 (bigger gap)
-const SPAWN_MIN_LIMIT = 600;   // ⬆ increased from 380 (bigger minimum gap)
+const SPAWN_BASE_MIN = 700;
+const SPAWN_BASE_MAX = 1400;
+const SPAWN_MIN_LIMIT = 380;
 
 // ================= RESPONSIVE CANVAS =================
 let GROUND_Y = 320;
@@ -128,14 +128,14 @@ function drawParticles() {
 function resetGame() {
   player = {
     x: 50, y: GROUND_Y, vy: 0,
-    width: 120, height: 120,
+    width: 100, height: 100,
     jumping: false,
     sprites: characterImages[selectedCharacter.name], 
     frameIndex: 0, 
     animTimer: 0
   };
   obstacles = [];
-  worldSpeed = 8;          // ⬆ increased from 5
+  worldSpeed = 5;
   score = 0;
   distanceTravelled = 0;
   gameRunning = true;
@@ -146,7 +146,7 @@ function resetGame() {
   deathZoom = 1;
   particles = [];
   lastSpawn = 0;
-  nextSpawnDelay = 1100 + Math.random() * 2000; // matches new spawn range
+  nextSpawnDelay = 900 + Math.random() * 1400;
 }
 
 // ================= START BUTTON =================
@@ -185,13 +185,13 @@ function spawnObstacle() {
   let obsWidth, obsHeight, obsY;
 
   if (isAirEnemy) {
-    obsWidth = 80;         // ⬆ increased from 55
-    obsHeight = 65;        // ⬆ increased from 45
-    obsY = GROUND_Y - 55; // unchanged — same ground position
+    obsWidth = 55;
+    obsHeight = 45;
+    obsY = GROUND_Y - 55; 
   } else {
-    obsWidth = 75;         // ⬆ increased from 50
-    obsHeight = 120;       // ⬆ increased from 90
-    obsY = GROUND_Y;       // unchanged — same ground position
+    obsWidth = 50;
+    obsHeight = 90; 
+    obsY = GROUND_Y; 
   }
 
   obstacles.push({
